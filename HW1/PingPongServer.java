@@ -15,7 +15,7 @@ import java.net.*;
 
 public class PingPongServer {
 
-    private long clientCount= 0;
+    private long clientCount= 1;
     private int port = 0;
 
     public PingPongServer(int port) {
@@ -24,6 +24,12 @@ public class PingPongServer {
 
 
 
+	/**
+	 * The main method for the server -- runs forever or until the client closes
+	 * the connection.
+	 * 
+	 * @throws IOException
+	 */
     public void runServer() throws IOException
     {
         @SuppressWarnings("resource")
@@ -31,7 +37,7 @@ public class PingPongServer {
         System.out.println("Server:ready");
         while(true){
             new ServerConnection(serverSocket.accept(), clientCount).start();
-            System.out.println("Server: Started cleint#" + clientCount );
+            System.out.println("Server: Started client #" + clientCount );
             clientCount++;
         }
     }
@@ -49,28 +55,28 @@ public class PingPongServer {
 
     
 
-    public void run()
-    {
-        try{
-            ObjectOutputStream out = new ObjectOutputStream(client.getOutputStream());
-            ObjectInputStream in = new ObjectInputStream(client.getInputStream());
-            System.out.println("connected" + client.getInetAddress().getHostAddress());
+        public void run()
+        {
+            try {
+                ObjectOutputStream out = new ObjectOutputStream(client.getOutputStream());
+                ObjectInputStream in = new ObjectInputStream(client.getInputStream());
+                System.out.println("connected" + client.getInetAddress().getHostAddress());
         
-            while(true) {
-                out.writeObject(processRequest(in.readObject()));
-                out.flush();
-            }
+                while(true) {
+                    out.writeObject(processRequest(in.readObject()));
+                    out.flush();
+                }
         
-        } catch (EOFException e) {// Normal EOF
+            } catch (EOFException e) {// Normal EOF
                     try {
                         client.close();
-                        System.out.println("Server Connection finished " + ClientCount);
+                        System.out.println("Server Connection finished " + clientCount);
 
                     } catch (IOException e1) {
                         System.err.println(e1);
                     }            
             } catch(IOException e) {
-                        System.err.println("I/O errer" + e); //IO err
+                    System.err.println("I/O errer" + e); //IO err
             } catch(ClassNotFoundException e) {
                 System.err.println(e);//Unknown request
             }
@@ -88,10 +94,10 @@ public class PingPongServer {
 
     }
 
-    public static void main(String[] args) 
+    public static void main(String[] args) throws IOException
     {
         if (args.length < 1){
-            System.err.println("Usage: Java Server <port>");
+            System.err.println("Usage: Java PingPongServer <port>");
             System.exit(1);
         }
         int port = Integer.parseInt(args[0]);
