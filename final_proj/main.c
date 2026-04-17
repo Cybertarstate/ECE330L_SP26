@@ -20,6 +20,7 @@
 #include "main.h"
 #include "usb_host.h"
 #include "seg7.h"
+#include "battleship.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -79,7 +80,7 @@ char BLUE_BRT = 0;
 char RED_STEP = 1;
 char GREEN_STEP = 2;
 char BLUE_STEP = 3;
-char DIM_Enable = 0;
+char DIM_Enable = 1;
 char Music_ON = 0;
 int TONE = 0;
 int COUNT = 0;
@@ -99,11 +100,12 @@ int Delay_counter = 0;
 int CRC_Tx = 0xd37e11c9;
 int CRC_Rx = 0;
 
-/* BUFFALO SOLDIER */
+/* BattleShips Message */
 char Message[] =
 		{SPACE,SPACE,SPACE,SPACE,SPACE,SPACE,SPACE,SPACE,SPACE,SPACE,
 		CHAR_B,CHAR_A,CHAR_T,CHAR_T,CHAR_L,CHAR_E,CHAR_S,CHAR_H,CHAR_I,CHAR_P,CHAR_S,
 		SPACE,SPACE,SPACE,SPACE,SPACE,SPACE,SPACE,SPACE,SPACE,SPACE};
+
 
 /* Declare array for Song */
 Music Song[100];
@@ -118,7 +120,6 @@ Music Song[100];
 int main(void)
 {
   /* USER CODE BEGIN 1 */
-
 
 
 
@@ -153,16 +154,17 @@ int main(void)
 
 
   /*** Configure GPIOs ***/
-  GPIOD->MODER = 0x55555555; // set all Port D pins to outputs
+  GPIOD->MODER = 0x55555555; // set all Port D pins to outputs [LEDs]
   GPIOA->MODER |= 0x000000FF; // Port A mode register - make A0 to A3 analog pins
-  GPIOE->MODER |= 0x55555555; // Port E mode register - make E0 to E15 outputs
-  GPIOC->MODER |= 0x0; // Port C mode register - all inputs
+  GPIOE->MODER |= 0x55555555; // Port E mode register - make E0 to E15 outputs [7 segment displays]
+  GPIOC->MODER |= 0x0; // Port C mode register - all inputs [SWITCHES]
   GPIOE->ODR = 0xFFFF; // Set all Port E pins high
 
   /*** Configure ADC1 ***/
   RCC->APB2ENR |= 1<<8;  // Turn on ADC1 clock by forcing bit 8 to 1 while keeping other bits unchanged
   ADC1->SMPR2 |= 1; // 15 clock cycles per sample
   ADC1->CR2 |= 1;        // Turn on ADC1 by forcing bit 0 to 1 while keeping other bits unchanged
+  ADC1->CR1 |= 1<<25; //8 bit resolution for potentiometer
 
   /*** Turn on CRC Clock in AHB1ENR to enable CRC hardware ***/
   RCC->AHB1ENR |= (1<<12);
@@ -196,36 +198,39 @@ int main(void)
 	  Save_Pointer = &Message[0];
 	  Message_Length = sizeof(Message)/sizeof(Message[0]);
 	  Delay_msec = 200;
-	  Animate_On = 1;
+	  //Animate_On = 1; //init title scroll refer it.c
 
-	  //********* Reset CRC value ********************
-	  CRC->CR |= (1);
-	  //********* Calculate CRC *********************
-	  CRC_Tx = 0x9dec096e;
-	  //********* Read CRC value into CRC_Rx  ********
+	  //HAL_Delay(2900);           // Delay 5 seconds to allow message to scroll
 
-	  GPIOD->ODR = CRC_Rx ^ CRC_Tx;  //XOR the sent and received CRC values and display on LEDs
-
-	  HAL_Delay(5000);           // Delay 5 seconds to allow message to scroll
-
-	  Animate_On = 0;            // Stop scrolling message
-	  Seven_Segment(CRC_Tx);     // Display CRC for sent message
-	  HAL_Delay(1000);           // Delay 1 second
-	  for (i=0 ; i<8 ; i++)      // Clear the display
-	  	  {
-	  		  Seven_Segment_Digit(i,SPACE,0);
-	  	  }
-
-	  HAL_Delay(500);           // Delay 1/2 second
-	  Seven_Segment(CRC_Rx);    // Display CRC calculated from received message
-	  HAL_Delay(1000);          // Delay for 1 second
+	  //Animate_On = 0;            // Stop scrolling message
+	  //HAL_Delay(500);
+	  //for (i=0 ; i<8 ; i++)      // Clear the display
+	  	  //{
+	  		//  Seven_Segment_Digit(i,SPACE,0);
+	  	//  }
 
 
-    /* USER CODE BEGIN 3 */
-	  for(int i = 0; i < Message_Length; i++) { //for loop from 0 through message length
-		  CRC->DR = Message[i]; //put the message in the data register
+	  draw_board(RED_BRT,GREEN_BRT * 2);
+	  //HAL_Delay(2900);
+
+
+
+
+
+
+
+	  //potentiometer section
+	  uint16_t *colors[3] = {&RED_BRT,&GREEN_BRT,&BLUE_BRT};
+	  for (int i =0; i <3 ; i++) {
+		  ADC1->SQR3 = i + 1;
+		  ADC1->CR2 |= (1 << 30);
+		  while(!(ADC1->SR & (1 << 1)));
+
+		  *colors[i] = ADC1->DR;
+
 	  }
-	  CRC_Rx = CRC->DR; //CRC_Rx value from CRC data register
+
+
   }
   /* USER CODE END 3 */
 
