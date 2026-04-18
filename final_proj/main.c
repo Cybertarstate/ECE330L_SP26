@@ -158,7 +158,7 @@ int main(void)
   GPIOA->MODER |= 0x000000FF; // Port A mode register - make A0 to A3 analog pins
   GPIOE->MODER |= 0x55555555; // Port E mode register - make E0 to E15 outputs [7 segment displays]
   GPIOC->MODER |= 0x0; // Port C mode register - all inputs [SWITCHES]
-  GPIOE->ODR = 0xFFFF; // Set all Port E pins high
+  //GPIOE->ODR = 0xFFFF; // Set all Port E pins high
 
   /*** Configure ADC1 ***/
   RCC->APB2ENR |= 1<<8;  // Turn on ADC1 clock by forcing bit 8 to 1 while keeping other bits unchanged
@@ -188,6 +188,8 @@ int main(void)
 
 
 
+  //GPIOE->ODR |= 0xFF00;   // set PE8–PE15 HIGH → all digits OFF
+  //GPIOE->ODR &= ~0x00FF;  // clear A–G + DP
 
 
   while (1)
@@ -200,7 +202,7 @@ int main(void)
 	  Delay_msec = 200;
 	  //Animate_On = 1; //init title scroll refer it.c
 
-	  //HAL_Delay(2900);           // Delay 5 seconds to allow message to scroll
+	  HAL_Delay(2900);           // Delay 5 seconds to allow message to scroll
 
 	  //Animate_On = 0;            // Stop scrolling message
 	  //HAL_Delay(500);
@@ -210,7 +212,7 @@ int main(void)
 	  	//  }
 
 
-	  draw_board(RED_BRT,GREEN_BRT * 2);
+	  draw_board();
 	  //HAL_Delay(2900);
 
 

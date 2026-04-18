@@ -21,7 +21,7 @@
 #define __BATTLESHIP_H
 #include "stm32f4xx_hal.h"
 
-void draw_board (int digit,int digit2);
+void draw_board (void);
 void poll_input (void);
 void gametime (void);
 void gameresult (void);
