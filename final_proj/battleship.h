@@ -19,13 +19,38 @@
 /* USER CODE END Header */
 #ifndef __BATTLESHIP_H
 #define __BATTLESHIP_H
+
 #include "stm32f4xx_hal.h"
 
-void draw_board (void);
-void poll_input (void);
-void gametime (void);
-void gameresult (void);
+/* --- Game State Logic --- */
+typedef enum {
+    MSG_PLAYER1,
+    PLACE_PLAYER1,
+    MSG_PLAYER2,
+    PLACE_PLAYER2,
+    BATTLE_PHASE,
+    GAME_OVER
+} GameState;
 
+/* --- Main Loop Interface --- */
+void poll_input(void);  // Reads ADCs and Fire Button
+void gametime(void);    // Handles State Machine transitions
+void draw_board(void);  // Renders maps + cursor to display_buffer
+void gameresult(void);  // Handles win/loss screens
 
+/* --- Setup & Helpers --- */
+void Battleship_Init(void);
+void Battleship_StartScreen(void);
+void scroll_message(char* str);
+uint8_t convert_ascii_to_7seg(char c);
+void place_ship(uint32_t *values);
+
+/* --- Shared Global Buffers --- */
+// These allow main.c to see the buffers if needed,
+// while they are managed by battleship.c
+extern uint8_t display_buffer[8];
+extern uint8_t p1_ships[8];
+extern uint8_t p2_ships[8];
+extern GameState current_state;
 
 #endif /* __BATTLESHIP_H */
