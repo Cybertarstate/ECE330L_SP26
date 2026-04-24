@@ -26,7 +26,9 @@
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN TD */
-
+extern uint8_t display_buffer[8];
+extern uint8_t dim_buffer[8];
+extern uint32_t ADC_Values[3];
 /* USER CODE END TD */
 
 /* Private define ------------------------------------------------------------*/
@@ -58,6 +60,11 @@
 extern HCD_HandleTypeDef hhcd_USB_OTG_FS;
 extern TIM_HandleTypeDef htim7;
 /* USER CODE BEGIN EV */
+/* USER CODE BEGIN EV */
+extern uint8_t display_buffer[8]; // Your map/game characters
+extern uint8_t dim_buffer[8];     // 1 for 100% brightness, 0 for 50%
+extern uint8_t blink_mask[8];    // Used to toggle the cursor segment
+/* USER CODE END EV */
 
 /* USER CODE END EV */
 
@@ -183,49 +190,23 @@ void PendSV_Handler(void)
   */
 void SysTick_Handler(void)
 {
-  /* USER CODE BEGIN SysTick_IRQn 0 */
-
-COUNT++;  // Increment note duration counter
-Vibrato_Count++; // Increment the note vibrato effect counter
-
-/* This code applies vibrato to the current note that is playing  */
-if (Vibrato_Count >= Vibrato_Rate)
-{
-	Vibrato_Count = 0;
-	if (Song[INDEX].note > 0)
-		{
-			Song[INDEX].note += Vibrato_Depth;
-			if (Song[INDEX].note > (Save_Note + Vibrato_Depth)) Song[INDEX].note = Save_Note - Vibrato_Depth;
-
-		}
-}
-
-if (Animate_On > 0)
-{
-	Delay_counter++;
-	if (Delay_counter > Delay_msec)
-	{
-		Delay_counter = 0;
-		Seven_Segment_Digit(7,*(Message_Pointer),0);
-		Seven_Segment_Digit(6,*(Message_Pointer+1),0);
-		Seven_Segment_Digit(5,*(Message_Pointer+2),0);
-		Seven_Segment_Digit(4,*(Message_Pointer+3),0);
-		Seven_Segment_Digit(3,*(Message_Pointer+4),0);
-		Seven_Segment_Digit(2,*(Message_Pointer+5),0);
-		Seven_Segment_Digit(1,*(Message_Pointer+6),0);
-		Seven_Segment_Digit(0,*(Message_Pointer+7),0);
-		Message_Pointer++;
-		if ((Message_Pointer - Save_Pointer) >= (Message_Length-8)) Message_Pointer = Save_Pointer;
-
-	}
-}
-  /* USER CODE END SysTick_IRQn 0 */
   HAL_IncTick();
-  /* USER CODE BEGIN SysTick_IRQn 1 */
+  static uint8_t digit = 0;
 
-  /* USER CODE END SysTick_IRQn 1 */
+  GPIOE->ODR = 0xFFFF; // Prevent ghosting
+
+  uint16_t digit_selector = ~(1 << (digit + 8)) & 0xFF00;
+
+  // --- THE FIX: APPLY BLINK MASK ---
+  // If blink_mask[digit] is 0xFF, it does nothing.
+  // If blink_mask[digit] is 0x00, it turns off that digit's segments.
+  // Note: Since segments are Active LOW, we OR the inverse or simply:
+  uint16_t segment_data = (display_buffer[digit] | ~blink_mask[digit]) & 0x00FF;
+
+  GPIOE->ODR = digit_selector | segment_data;
+
+  digit = (digit + 1) % 8;
 }
-
 /******************************************************************************/
 /* STM32F4xx Peripheral Interrupt Handlers                                    */
 /* Add here the Interrupt Handlers for the used peripherals.                  */
